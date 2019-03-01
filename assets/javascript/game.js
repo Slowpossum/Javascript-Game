@@ -3,8 +3,8 @@ var objects = {};
 var details = { freePos: [0, 1, 2, 3, 4, 5, 6, 7] };
 var gameBackground;
 var backgroundGlow;
-var theme = "light";
-var themeMod = "est";
+var theme = "lighter";
+var fontColor = "#000000";
 
 
 // Object to hold details about the edge-glow.
@@ -44,7 +44,7 @@ var hangmanGame = {
     status: "menu",
     frameCount: 1,
     menuPos: 0,
-    guesses: 10,
+    guesses: 8,
     menuWave: 75,
     start: function () {
         this.canvas.width = 800;
@@ -85,8 +85,8 @@ var hangmanGame = {
 // Starts the hangman game, creates objects for the background and glow, loads letters for the menu, and calls the start method,
 // which formally creates the canvas, adds it to the body, and begins the loop to update the canvas.
 function hangmanStart() {
-    gameBackground = new Component(800, 500, `./assets/images/${theme + themeMod}/background.png`, 0, 0, "image");
-    backgroundGlow = new Component(800, 500, `./assets/images/${theme + themeMod}/glow.png`, 0, 0, "image");
+    gameBackground = new Component(800, 500, `./assets/images/${theme}/background.png`, 0, 0);
+    backgroundGlow = new Component(800, 500, `./assets/images/${theme}/glow.png`, 0, 0);
     loadLetters();
     hangmanGame.start();
 }
@@ -102,9 +102,15 @@ function updateGameArea() {
         updateLetters();
     } else if (hangmanGame.status === "game") {
         //display top animation
-        //display word
-        //display guesses
-        //display guessed letters
+        updateScreen();
+        checkState();
+    } else if (hangmanGame.status === "win") {
+        //you win!
+        //return to menu
+    } else if (hangmanGame.status === "lose") {
+        //fade to black
+        //you lose
+        //teeth
     }
 
     updateDetails();
@@ -112,27 +118,19 @@ function updateGameArea() {
 }
 
 // Constructor function to create Components, which are general elements on the page that will be manipulated by the user.
-function Component(width, height, src, x, y, type) {
-    this.type = type;
-    if (type === "image") {
-        this.image = new Image();
-        this.image.src = src;
-    }
+function Component(width, height, src, x, y) {
+    this.image = new Image();
+    this.image.src = src;
     this.width = width;
     this.height = height;
     this.x = x;
     this.y = y;
     this.update = function () {
         ctx = hangmanGame.context;
-        if (type === "image") {
-            ctx.drawImage(this.image,
-                this.x,
-                this.y,
-                this.width, this.height);
-        } else {
-            ctx.fillStyle = src;
-            ctx.fillRect(this.x, this.y, this.width, this.height);
-        }
+        ctx.drawImage(this.image,
+            this.x,
+            this.y,
+            this.width, this.height);
     }
 }
 
@@ -143,7 +141,7 @@ function DetailObject(src) {
     this.image.src = src;
     this.width = 75;
     this.height = 75;
-    this.x = Math.floor(Math.random() * 600) + 100;
+    this.x = Math.floor(Math.random() * 750) + 25;
     this.y = 510;
     this.opac = 1;
     this.yDest = Math.floor(Math.random() * 200) + 100;
@@ -159,19 +157,25 @@ function DetailObject(src) {
     }
 }
 
+
+//
+//
+// MENU FUNCTIONS
+//
+//
 // Function called at start to load letters for the menu into objects{}.
 function loadLetters() {
     var hangman = "hangman";
 
     for (var i = 0; i < 7; i++) {
-        objects[i] = new Component(120, 120, `./assets/images/letters/${hangman[i]}.png`, (10 + (i * 110)), -250, "image");
+        objects[i] = new Component(120, 120, `./assets/images/letters/${hangman[i]}.png`, (10 + (i * 110)), -250);
         objects[i].offset = 50;
         objects[i].letterWave = 0;
         objects[i].waveDir = "up";
         objects[i].delay = 5 * i;
     }
 
-    objects.startButton = new Component(150, 75, "./assets/images/letters/start.png", 325, 300, "image");
+    objects.startButton = new Component(150, 75, "./assets/images/letters/start.png", 325, 300);
     objects.startButton.state = "shrink";
 }
 
@@ -239,7 +243,7 @@ function updateLetters() {
 function updateDetails() {
     if (Object.keys(details).length <= 8 && hangmanGame.frameCount % 25 === 0) {
         if (Math.floor(Math.random() * 100) + 1 >= 50) {
-            details[details.freePos[0]] = new DetailObject(`./assets/images/${theme + themeMod}/detail${Math.floor(Math.random() * 2) + 1}.png`);
+            details[details.freePos[0]] = new DetailObject(`./assets/images/${theme}/detail${Math.floor(Math.random() * 2) + 1}.png`);
             details.freePos.splice(0, 1);
         }
     }
@@ -260,12 +264,85 @@ function updateDetails() {
     }
 }
 
-// Onkeyup event to handle user input.
-document.onkeyup = function (e) {
-
-}
-
 // Function to round used in glow.update() method, because I was running into odd rounding errors with adding/subtracting 0.01.
 function round(num, amount) {
     return (Math.round(num * amount) / amount);
+}
+
+
+//
+//
+//  GAME FUNCTIONS
+//
+//
+// Onkeyup event to handle user input.
+document.onkeyup = function (e) {
+    var alphabet = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"];
+
+    if (hangmanGame.status === "game" && hangmanGame.guesses > 0) {
+        if (hangmanGame.currentWord.indexOf(e.key) != -1) {
+            for (var i = 0; i < hangmanGame.currentWord.length; i++) {
+                if (hangmanGame.currentWord[i] === e.key) {
+                    hangmanGame.wordStatus[i] = e.key;
+
+                    if (hangmanGame.guessedLetters.indexOf(e.key) === -1) {
+                        hangmanGame.guessedLetters.push(e.key);
+                    }
+                }
+            }
+        } else {
+            console.log("not in there");
+            if (hangmanGame.guessedLetters.indexOf(e.key) === -1 && alphabet.indexOf(e.key) !== -1) {
+                hangmanGame.guessedLetters.push(e.key);
+                hangmanGame.guesses--;
+            } else if (alphabet.indexOf(e.key) === -1) {
+                //nothing
+            } else {
+                // alert("You've already guessed that!");
+            }
+        }
+    }
+}
+
+function updateScreen() {
+    var ctx = hangmanGame.canvas.getContext("2d");
+    ctx.font = "50px Rock Salt";
+    ctx.fillStyle = fontColor;
+
+    ctx.textAlign = "center";
+    ctx.fillText(`${hangmanGame.wordStatus.join(" ")}`, hangmanGame.canvas.width / 2, 400);
+
+    if (hangmanGame.guessedLetters.length !== 0) {
+        ctx.font = "30px Rock Salt";
+        ctx.textAlign = "start";
+        ctx.fillText(`${hangmanGame.guessedLetters.join(" ")}`, 30, 470);
+    }
+
+    ctx.font = "75px Rock Salt";
+    ctx.textAlign = "center";
+    ctx.fillText(`${hangmanGame.guesses}`, 400, 300);
+    ctx.font = "20px Rock Salt";
+    ctx.fillText("guesses remaining", 400, 350);
+}
+
+function checkState() {
+    if (hangmanGame.guesses > 6 && hangmanGame.guesses <= 8) {
+        theme = "lighter";
+        fontColor = "#000000";
+    } else if (hangmanGame.guesses > 4 && hangmanGame.guesses <= 6) {
+        theme = "light";
+        fontColor = "#000000";
+        gameBackground.image.src = `./assets/images/${theme}/background.png`;
+        backgroundGlow.image.src = `./assets/images/${theme}/glow.png`;
+    } else if (hangmanGame.guesses > 2 && hangmanGame.guesses <= 4) {
+        theme = "dark";
+        fontColor = "#490e06";
+        gameBackground.image.src = `./assets/images/${theme}/background.png`;
+        backgroundGlow.image.src = `./assets/images/${theme}/glow.png`;
+    } else if (hangmanGame.guesses > 0 && hangmanGame.guesses <= 2) {
+        theme = "darker";
+        fontColor = "#871000";
+        gameBackground.image.src = `./assets/images/${theme}/background.png`;
+        backgroundGlow.image.src = `./assets/images/${theme}/glow.png`;
+    }
 }
