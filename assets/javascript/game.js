@@ -1,8 +1,12 @@
 //VARIABLES AND OBJECTS
 var objects = {};
 var details = { freePos: [0, 1, 2, 3, 4, 5, 6, 7] };
+var teeth = [];
 var gameBackground;
 var backgroundGlow;
+var blackOpac = 0;
+var character;
+var counter = 0;
 var theme = "lighter";
 var fontColor = "#000000";
 
@@ -77,6 +81,14 @@ var hangmanGame = {
     resetObj: function () {
         objects = {};
         details = { freePos: [0, 1, 2, 3, 4] };
+    },
+    resetVar: function () {
+        this.guessedLetters = [];
+        this.wordStatus = [];
+        this.guesses = 8;
+        this.menuPos = 0;
+        theme = "lighter";
+        fontColor = "#000000";
     }
 };
 
@@ -87,6 +99,7 @@ var hangmanGame = {
 function hangmanStart() {
     gameBackground = new Component(800, 500, `./assets/images/${theme}/background.png`, 0, 0);
     backgroundGlow = new Component(800, 500, `./assets/images/${theme}/glow.png`, 0, 0);
+    character = new AnimatedItem(400, 400, `./assets/images/character/${theme}.png`, 0, 0);
     loadLetters();
     hangmanGame.start();
 }
@@ -100,21 +113,30 @@ function updateGameArea() {
 
     if (hangmanGame.status === "menu") {
         updateLetters();
+
+        updateDetails();
+        glow.update();
     } else if (hangmanGame.status === "game") {
-        //display top animation
+        updateAnimatedCharacter();
         updateScreen();
         checkState();
-    } else if (hangmanGame.status === "win") {
-        //you win!
-        //return to menu
-    } else if (hangmanGame.status === "lose") {
-        //fade to black
-        //you lose
-        //teeth
-    }
 
-    updateDetails();
-    glow.update();
+        updateDetails();
+        glow.update();
+    } else if (hangmanGame.status === "win") {
+        updateAnimatedCharacter();
+        updateScreen();
+        winCondition();
+
+        updateDetails();
+        glow.update();
+    } else if (hangmanGame.status === "lose") {
+        glow.update();
+        fadeToBlack();
+        //loadTeeth();
+        //teeth
+        loseCondition();
+    }
 }
 
 // Constructor function to create Components, which are general elements on the page that will be manipulated by the user.
@@ -154,6 +176,25 @@ function DetailObject(src) {
             this.y,
             this.width, this.height);
         ctx.globalAlpha = 1;
+    }
+}
+
+
+// Constructor function for animated item
+function AnimatedItem(width, height, src, x, y) {
+    this.image = new Image();
+    this.image.src = src;
+    this.width = width;
+    this.height = height;
+    this.frame = 0;
+    this.x = x;
+    this.y = y;
+    this.update = function () {
+        ctx = hangmanGame.context;
+        ctx.drawImage(this.image,
+            this.x,
+            this.y,
+            this.width, this.height);
     }
 }
 
@@ -241,6 +282,8 @@ function updateLetters() {
 
 // Creates and updates details as they disappear/move.
 function updateDetails() {
+    ctx = hangmanGame.context;
+
     if (Object.keys(details).length <= 8 && hangmanGame.frameCount % 25 === 0) {
         if (Math.floor(Math.random() * 100) + 1 >= 50) {
             details[details.freePos[0]] = new DetailObject(`./assets/images/${theme}/detail${Math.floor(Math.random() * 2) + 1}.png`);
@@ -280,7 +323,7 @@ document.onkeyup = function (e) {
     var alphabet = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"];
 
     if (hangmanGame.status === "game" && hangmanGame.guesses > 0) {
-        if (hangmanGame.currentWord.indexOf(e.key) != -1) {
+        if (hangmanGame.currentWord.indexOf(e.key) !== -1) {
             for (var i = 0; i < hangmanGame.currentWord.length; i++) {
                 if (hangmanGame.currentWord[i] === e.key) {
                     hangmanGame.wordStatus[i] = e.key;
@@ -291,19 +334,22 @@ document.onkeyup = function (e) {
                 }
             }
         } else {
-            console.log("not in there");
             if (hangmanGame.guessedLetters.indexOf(e.key) === -1 && alphabet.indexOf(e.key) !== -1) {
                 hangmanGame.guessedLetters.push(e.key);
                 hangmanGame.guesses--;
-            } else if (alphabet.indexOf(e.key) === -1) {
-                //nothing
-            } else {
-                // alert("You've already guessed that!");
             }
+        }
+
+        if (hangmanGame.wordStatus.join("") === hangmanGame.currentWord) {
+            hangmanGame.status = "win";
+        } else if (hangmanGame.guesses === 0) {
+            hangmanGame.status = "lose";
         }
     }
 }
 
+// Function to update the screen during the "game" status, adding guessed letters, decrementing
+// guesses when a failed letter is chosen, and updating the word as correct letters are guessed
 function updateScreen() {
     var ctx = hangmanGame.canvas.getContext("2d");
     ctx.font = "50px Rock Salt";
@@ -325,6 +371,7 @@ function updateScreen() {
     ctx.fillText("guesses remaining", 400, 350);
 }
 
+// Checks how many guesses are remaining and updates the theme accordingly
 function checkState() {
     if (hangmanGame.guesses > 6 && hangmanGame.guesses <= 8) {
         theme = "lighter";
@@ -334,15 +381,104 @@ function checkState() {
         fontColor = "#000000";
         gameBackground.image.src = `./assets/images/${theme}/background.png`;
         backgroundGlow.image.src = `./assets/images/${theme}/glow.png`;
+        character.image.src = `./assets/images/character/${theme}.png`;
     } else if (hangmanGame.guesses > 2 && hangmanGame.guesses <= 4) {
         theme = "dark";
         fontColor = "#490e06";
         gameBackground.image.src = `./assets/images/${theme}/background.png`;
         backgroundGlow.image.src = `./assets/images/${theme}/glow.png`;
+        character.image.src = `./assets/images/character/${theme}.png`;
     } else if (hangmanGame.guesses > 0 && hangmanGame.guesses <= 2) {
         theme = "darker";
         fontColor = "#871000";
         gameBackground.image.src = `./assets/images/${theme}/background.png`;
         backgroundGlow.image.src = `./assets/images/${theme}/glow.png`;
+        character.image.src = `./assets/images/character/${theme}.png`;
     }
+}
+
+// Animates the tiny character during game
+function updateAnimatedCharacter() {
+    var ctx = hangmanGame.canvas.getContext("2d");
+
+    ctx.drawImage(character.image, 400 * character.frame, 0, 400, 400, 310, 15, 200, 200);
+
+    if (hangmanGame.frameCount % 25 === 0) {
+        if (character.frame === 0) {
+            character.frame++;
+        } else {
+            character.frame = 0;
+        }
+    }
+}
+
+// Notifies of victory, resets variables, and returns to menu
+function winCondition() {
+    var ctx = hangmanGame.canvas.getContext("2d");
+
+    if (counter < 3) {
+        ctx.font = ctx.font = "125px Rock Salt";
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#f2042c";
+        ctx.fillText(`YOU WIN!`, 400, 250);
+    } else {
+        resetAll();
+    }
+
+    if (hangmanGame.frameCount === 50) {
+        counter++;
+    }
+}
+
+// Notifies of loss and presents loss screen before resetting variables and returning to menu
+function loseCondition() {
+    var ctx = hangmanGame.canvas.getContext("2d");
+
+    if (blackOpac === 1) {
+        if (counter < 3) {
+            ctx.font = ctx.font = "50px Rock Salt";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#f2042c";
+            ctx.fillText(`you lose...`, 400, 250);
+        } else {
+            resetAll();
+        }
+    
+        if (hangmanGame.frameCount === 50) {
+            counter++;
+        }
+    }
+}
+
+// Fades screen to black
+function fadeToBlack() {
+    var ctx = hangmanGame.canvas.getContext("2d");
+
+    if (hangmanGame.frameCount % 2 === 0) {
+        if (blackOpac < 1) {
+            blackOpac = round(blackOpac + 0.025, 1000);
+        }
+    }
+
+    if (blackOpac > 1) {
+        blackOpac = 1;
+    }
+
+    ctx.globalAlpha = blackOpac;
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, hangmanGame.canvas.width, hangmanGame.canvas.height);
+    ctx.fillStyle = fontColor;
+    ctx.globalAlpha = 1;
+}
+
+// Function to reset variables used in winCondition() and loseCondition()
+function resetAll() {
+    counter = 0;
+    hangmanGame.resetVar();
+    hangmanGame.resetObj();
+    loadLetters();
+    gameBackground.image.src = `./assets/images/${theme}/background.png`;
+    backgroundGlow.image.src = `./assets/images/${theme}/glow.png`;
+    character.image.src = `./assets/images/character/${theme}.png`;
+    hangmanGame.status = "menu";
 }
