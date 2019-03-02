@@ -1,7 +1,11 @@
 //VARIABLES AND OBJECTS
 var objects = {};
 var details = { freePos: [0, 1, 2, 3, 4, 5, 6, 7] };
-var teeth = [];
+var teeth = {
+    top: [],
+    bottom: [],
+    complete: 0
+};
 var gameBackground;
 var backgroundGlow;
 var blackOpac = 0;
@@ -133,9 +137,16 @@ function updateGameArea() {
     } else if (hangmanGame.status === "lose") {
         glow.update();
         fadeToBlack();
-        //loadTeeth();
-        //teeth
-        loseCondition();
+
+        if (blackOpac === 1 && teeth.bottom.length === 0 && teeth.top.length === 0) {
+            loadTeeth();
+        } else if (teeth.bottom.length > 0 && teeth.top.length > 0) {
+            bite();
+        }
+
+        if (teeth.complete === 1) {
+            loseCondition();
+        }
     }
 }
 
@@ -198,12 +209,44 @@ function AnimatedItem(width, height, src, x, y) {
     }
 }
 
+// Constructor function for... uh, teeth.
+function Teeth(src, x, y) {
+    this.image = new Image();
+    this.image.src = src;
+    this.width = 75;
+    this.height = 175;
+    this.frame = 0;
+    this.x = x;
+    this.y = y;
+    this.yDest = 200;
+    this.steps = 40;
+    this.yChange = (this.yDest - this.y) / this.steps;
+    this.update = function () {
+        ctx = hangmanGame.context;
+        ctx.drawImage(this.image,
+            this.x,
+            this.y,
+            this.width, this.height);
+    }
+}
+
 
 //
 //
 // MENU FUNCTIONS
 //
 //
+// Function called to load teeth.
+function loadTeeth() {
+    for (var i = 0; i < 8; i++) {
+        teeth.top[i] = new Teeth(`./assets/images/teeth/top/${i + 1}.png`, 160 + (50 * i), -270);
+    }
+
+    for (i = 0; i < 8; i++) {
+        teeth.bottom[i] = new Teeth(`./assets/images/teeth/bottom/${i + 1}.png`, 170 + (47 * i), 1000);
+    }
+}
+
 // Function called at start to load letters for the menu into objects{}.
 function loadLetters() {
     var hangman = "hangman";
@@ -432,22 +475,13 @@ function winCondition() {
 
 // Notifies of loss and presents loss screen before resetting variables and returning to menu
 function loseCondition() {
-    var ctx = hangmanGame.canvas.getContext("2d");
-
-    if (blackOpac === 1) {
-        if (counter < 3) {
-            ctx.font = ctx.font = "50px Rock Salt";
-            ctx.textAlign = "center";
-            ctx.fillStyle = "#f2042c";
-            ctx.fillText(`you lose...`, 400, 250);
-        } else {
-            resetAll();
-        }
-    
-        if (hangmanGame.frameCount === 50) {
-            counter++;
-        }
-    }
+    teeth = {
+        top: [],
+        bottom: [],
+        complete: 0
+    };
+    resetAll();
+    counter = 0;
 }
 
 // Fades screen to black
@@ -469,6 +503,45 @@ function fadeToBlack() {
     ctx.fillRect(0, 0, hangmanGame.canvas.width, hangmanGame.canvas.height);
     ctx.fillStyle = fontColor;
     ctx.globalAlpha = 1;
+}
+
+// Bite.
+function bite() {
+    var ctx = hangmanGame.canvas.getContext("2d");
+
+    if (teeth.top[4].y < 140) {
+        ctx.font = ctx.font = "50px Rock Salt";
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#f2042c";
+        ctx.fillText(`you lose...`, 400, 300);
+    }
+
+    if (counter >= 3 && teeth.complete === 0) {
+        for (var i = 0; i < 8; i++) {
+            teeth.bottom[i].update();
+
+            if (teeth.bottom[i].y + teeth.bottom[i].yChange > teeth.top[i].yDest) {
+                teeth.bottom[i].y += teeth.bottom[i].yChange;
+            } else {
+                teeth.complete = 1;
+            }  
+        }
+
+        for (var n1 = 0, n2 = 7; n1 <= 3; n1++) {
+            teeth.top[n1].update();
+            teeth.top[n2].update();
+
+            if (teeth.top[n1].y + teeth.top[n1].yChange < teeth.top[n1].yDest) {
+                teeth.top[n1].y += teeth.top[n1].yChange;
+                teeth.top[n2].y += teeth.top[n2].yChange;
+            }
+            n2--;
+        }
+    } else {
+        if (hangmanGame.frameCount === 50) {
+            counter++;
+        }
+    }
 }
 
 // Function to reset variables used in winCondition() and loseCondition()
