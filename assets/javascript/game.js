@@ -59,8 +59,11 @@ var hangmanGame = {
         this.canvas.height = 500;
         this.context = this.canvas.getContext("2d");
         this.canvas.classList.add("canvasFormatting");
+        this.canvas.id = "gameCanvas";
         this.canvas.onclick = function test(e) {
-            if (e.clientX > 528 && e.clientX < 723 && e.clientY > 318 && e.clientY < 414 && hangmanGame.status === "menu") {
+            var canvasID = document.getElementById("gameCanvas");
+
+            if (e.clientX > (canvasID.offsetLeft + objects.startButton.x) && e.clientX < (canvasID.offsetLeft + objects.startButton.x + 150) && e.clientY > 318 && e.clientY < 395 && hangmanGame.status === "menu") {
                 hangmanGame.status = "game";
                 hangmanGame.resetObj();
                 hangmanGame.currentWord = hangmanGame.words[Math.floor(Math.random() * hangmanGame.words.length)];
