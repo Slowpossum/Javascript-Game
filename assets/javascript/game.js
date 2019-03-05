@@ -21,7 +21,7 @@ var glow = {
     nextOpacity: 0.4,
     update: function () {
         if (glow.opacity > glow.nextOpacity) {
-            hangmanGame.context.globalAlpha = glow.opacity;
+            hangmanGame.canvas.getContext("2d").globalAlpha = glow.opacity;
             backgroundGlow.update();
             glow.opacity -= 0.01;
             glow.opacity = round(glow.opacity, 100);
@@ -30,7 +30,7 @@ var glow = {
                 glow.nextOpacity = 0.9;
             }
         } else if (glow.opacity < glow.nextOpacity) {
-            hangmanGame.context.globalAlpha = glow.opacity;
+            hangmanGame.canvas.getContext("2d").globalAlpha = glow.opacity;
             backgroundGlow.update();
             glow.opacity += 0.01;
             glow.opacity = round(glow.opacity, 100);
@@ -45,6 +45,7 @@ var glow = {
 // Object to hold details about game, canvas information, and general methods.
 var hangmanGame = {
     canvas: document.createElement("canvas"),
+    offscreenCanvas: document.createElement("canvas"),
     words: ["despair", "futility", "desperation", "anguish", "revulsion", "dread", "wretched", "writhe", "hopeless", "horror", "powerless", "horrendous"],
     currentWord: "",
     wordStatus: [],
@@ -56,14 +57,15 @@ var hangmanGame = {
     menuWave: 75,
     start: function () {
         this.canvas.width = 800;
+        this.offscreenCanvas.width = 800;
         this.canvas.height = 500;
-        this.context = this.canvas.getContext("2d");
+        this.offscreenCanvas.height = 500;
         this.canvas.classList.add("canvasFormatting");
         this.canvas.id = "gameCanvas";
         this.canvas.onclick = function test(e) {
             var canvasID = document.getElementById("gameCanvas");
 
-            if (e.clientX > (canvasID.offsetLeft + objects.startButton.x) && e.clientX < (canvasID.offsetLeft + objects.startButton.x + 150) && e.clientY > 318 && e.clientY < 395 && hangmanGame.status === "menu") {
+            if (e.clientX > (objects.startButton.x + canvasID.offsetLeft) && e.clientX < (objects.startButton.x + canvasID.offsetLeft + 150) && e.clientY > 318 && e.clientY < 414 && hangmanGame.status === "menu") {
                 hangmanGame.status = "game";
                 hangmanGame.resetObj();
                 hangmanGame.currentWord = hangmanGame.words[Math.floor(Math.random() * hangmanGame.words.length)];
@@ -76,7 +78,7 @@ var hangmanGame = {
         this.interval = setInterval(updateGameArea, 20);
     },
     clear: function () {
-        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.canvas.getContext("2d").clearRect(0, 0, this.canvas.width, this.canvas.height);
     },
     updateFrameCount: function () {
         if ((this.frameCount + 1) <= 50) {
@@ -105,7 +107,9 @@ var hangmanGame = {
 // which formally creates the canvas, adds it to the body, and begins the loop to update the canvas.
 function hangmanStart() {
     gameBackground = new Component(800, 500, `./assets/images/${theme}/background.png`, 0, 0);
+    offscreenBackground = new OffscreenComponent(800, 500, `./assets/images/light/background.png`, -800, 0);
     backgroundGlow = new Component(800, 500, `./assets/images/${theme}/glow.png`, 0, 0);
+    offscreenGlow = new OffscreenComponent(800, 500, `./assets/images/light/background.png`, -800, 0);
     character = new AnimatedItem(400, 400, `./assets/images/character/${theme}.png`, 0, 0);
     loadLetters();
     hangmanGame.start();
@@ -113,16 +117,18 @@ function hangmanStart() {
 
 // Updates the canvas every 20ms, creating the animations and responding to user input.
 function updateGameArea() {
-    hangmanGame.context.globalAlpha = 1;
+    hangmanGame.canvas.getContext("2d").globalAlpha = 1;
     hangmanGame.updateFrameCount();
     hangmanGame.clear();
     gameBackground.update();
+    offscreenBackground.update();
 
     if (hangmanGame.status === "menu") {
         updateLetters();
 
         updateDetails();
         glow.update();
+        offscreenGlow.update();
     } else if (hangmanGame.status === "game") {
         updateAnimatedCharacter();
         updateScreen();
@@ -130,6 +136,7 @@ function updateGameArea() {
 
         updateDetails();
         glow.update();
+        offscreenGlow.update();
     } else if (hangmanGame.status === "win") {
         updateAnimatedCharacter();
         updateScreen();
@@ -137,8 +144,10 @@ function updateGameArea() {
 
         updateDetails();
         glow.update();
+        offscreenGlow.update();
     } else if (hangmanGame.status === "lose") {
         glow.update();
+        offscreenGlow.update();
         fadeToBlack();
 
         if (blackOpac === 1 && teeth.bottom.length === 0 && teeth.top.length === 0) {
@@ -162,7 +171,24 @@ function Component(width, height, src, x, y) {
     this.x = x;
     this.y = y;
     this.update = function () {
-        ctx = hangmanGame.context;
+        ctx = hangmanGame.canvas.getContext("2d");
+        ctx.drawImage(this.image,
+            this.x,
+            this.y,
+            this.width, this.height);
+    }
+}
+
+// Constructor function to create offscreen Components.
+function OffscreenComponent(width, height, src, x, y) {
+    this.image = new Image();
+    this.image.src = src;
+    this.width = width;
+    this.height = height;
+    this.x = x;
+    this.y = y;
+    this.update = function () {
+        ctx = hangmanGame.offscreenCanvas.getContext("2d");
         ctx.drawImage(this.image,
             this.x,
             this.y,
@@ -183,7 +209,7 @@ function DetailObject(src) {
     this.yDest = Math.floor(Math.random() * 200) + 100;
     this.update = function () {
         this.opac = 1 - (this.yDest / this.y);
-        ctx = hangmanGame.context;
+        ctx = hangmanGame.canvas.getContext("2d");
         ctx.globalAlpha = this.opac;
         ctx.drawImage(this.image,
             this.x,
@@ -204,7 +230,7 @@ function AnimatedItem(width, height, src, x, y) {
     this.x = x;
     this.y = y;
     this.update = function () {
-        ctx = hangmanGame.context;
+        ctx = hangmanGame.canvas.getContext("2d");
         ctx.drawImage(this.image,
             this.x,
             this.y,
@@ -225,7 +251,7 @@ function Teeth(src, x, y) {
     this.steps = 40;
     this.yChange = (this.yDest - this.y) / this.steps;
     this.update = function () {
-        ctx = hangmanGame.context;
+        ctx = hangmanGame.canvas.getContext("2d");
         ctx.drawImage(this.image,
             this.x,
             this.y,
@@ -328,7 +354,7 @@ function updateLetters() {
 
 // Creates and updates details as they disappear/move.
 function updateDetails() {
-    ctx = hangmanGame.context;
+    ctx = hangmanGame.canvas.getContext("2d");
 
     if (Object.keys(details).length <= 8 && hangmanGame.frameCount % 25 === 0) {
         if (Math.floor(Math.random() * 100) + 1 >= 50) {
@@ -426,19 +452,25 @@ function checkState() {
         theme = "light";
         fontColor = "#000000";
         gameBackground.image.src = `./assets/images/${theme}/background.png`;
+        offscreenBackground.image.src = "./assets/images/dark/background.png";
         backgroundGlow.image.src = `./assets/images/${theme}/glow.png`;
+        offscreenGlow.image.src = "./assets/images/dark/glow.png";
         character.image.src = `./assets/images/character/${theme}.png`;
     } else if (hangmanGame.guesses > 2 && hangmanGame.guesses <= 4) {
         theme = "dark";
         fontColor = "#490e06";
         gameBackground.image.src = `./assets/images/${theme}/background.png`;
+        offscreenBackground.image.src = "./assets/images/darker/background.png";
         backgroundGlow.image.src = `./assets/images/${theme}/glow.png`;
+        offscreenGlow.image.src= "./assets/images/darker/glow.png";
         character.image.src = `./assets/images/character/${theme}.png`;
     } else if (hangmanGame.guesses > 0 && hangmanGame.guesses <= 2) {
         theme = "darker";
         fontColor = "#871000";
         gameBackground.image.src = `./assets/images/${theme}/background.png`;
+        offscreenBackground.image.src = "./assets/images/lighter/background.png";
         backgroundGlow.image.src = `./assets/images/${theme}/glow.png`;
+        offscreenGlow.image.src = "./assets/images/lighter/glow.png";
         character.image.src = `./assets/images/character/${theme}.png`;
     }
 }
