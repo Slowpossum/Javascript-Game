@@ -423,23 +423,32 @@ function checkState() {
         theme = "lighter";
         fontColor = "#000000";
     } else if (hangmanGame.guesses > 4 && hangmanGame.guesses <= 6) {
-        theme = "light";
-        fontColor = "#000000";
-        gameBackground = new Component(800, 500, `./assets/images/${theme}/background.png`, 0, 0);
-        backgroundGlow = new Component(800, 500, `./assets/images/${theme}/glow.png`, 0, 0);
-        character = new AnimatedItem(400, 400, `./assets/images/character/${theme}.png`, 0, 0);
+        if (theme === "light") {
+        } else {
+            theme = "light";
+            fontColor = "#000000";
+            gameBackground = new Component(800, 500, `./assets/images/${theme}/background.png`, 0, 0);
+            backgroundGlow = new Component(800, 500, `./assets/images/${theme}/glow.png`, 0, 0);
+            character = new AnimatedItem(400, 400, `./assets/images/character/${theme}.png`, 0, 0);
+        }
     } else if (hangmanGame.guesses > 2 && hangmanGame.guesses <= 4) {
-        theme = "dark";
-        fontColor = "#490e06";
-        gameBackground = new Component(800, 500, `./assets/images/${theme}/background.png`, 0, 0);
-        backgroundGlow = new Component(800, 500, `./assets/images/${theme}/glow.png`, 0, 0);
-        character = new AnimatedItem(400, 400, `./assets/images/character/${theme}.png`, 0, 0);
+        if (theme === "dark") {
+        } else {
+            theme = "dark";
+            fontColor = "#490e06";
+            gameBackground = new Component(800, 500, `./assets/images/${theme}/background.png`, 0, 0);
+            backgroundGlow = new Component(800, 500, `./assets/images/${theme}/glow.png`, 0, 0);
+            character = new AnimatedItem(400, 400, `./assets/images/character/${theme}.png`, 0, 0);
+        }
     } else if (hangmanGame.guesses > 0 && hangmanGame.guesses <= 2) {
-        theme = "darker";
-        fontColor = "#871000";
-        gameBackground = new Component(800, 500, `./assets/images/${theme}/background.png`, 0, 0);
-        backgroundGlow = new Component(800, 500, `./assets/images/${theme}/glow.png`, 0, 0);
-        character = new AnimatedItem(400, 400, `./assets/images/character/${theme}.png`, 0, 0);
+        if (theme === "darker") {
+        } else {
+            theme = "darker";
+            fontColor = "#871000";
+            gameBackground = new Component(800, 500, `./assets/images/${theme}/background.png`, 0, 0);
+            backgroundGlow = new Component(800, 500, `./assets/images/${theme}/glow.png`, 0, 0);
+            character = new AnimatedItem(400, 400, `./assets/images/character/${theme}.png`, 0, 0);
+        }
     }
 }
 
@@ -527,7 +536,7 @@ function bite() {
                 teeth.bottom[i].y += teeth.bottom[i].yChange;
             } else {
                 teeth.complete = 1;
-            }  
+            }
         }
 
         for (var n1 = 0, n2 = 7; n1 <= 3; n1++) {
