@@ -57,15 +57,13 @@ var hangmanGame = {
     menuWave: 75,
     start: function () {
         this.canvas.width = 800;
-        this.offscreenCanvas.width = 800;
         this.canvas.height = 500;
-        this.offscreenCanvas.height = 500;
         this.canvas.classList.add("canvasFormatting");
         this.canvas.id = "gameCanvas";
-        this.canvas.onclick = function test(e) {
+        this.canvas.onclick = function click(e) {
             var canvasID = document.getElementById("gameCanvas");
 
-            if (e.clientX > (objects.startButton.x + canvasID.offsetLeft) && e.clientX < (objects.startButton.x + canvasID.offsetLeft + 150) && e.clientY > 318 && e.clientY < 414 && hangmanGame.status === "menu") {
+            if (hangmanGame.status === "menu" && e.clientX > (objects.startButton.x + canvasID.offsetLeft) && e.clientX < (objects.startButton.x + canvasID.offsetLeft + 150) && e.clientY > 318 && e.clientY < 414 && hangmanGame.status === "menu") {
                 hangmanGame.status = "game";
                 hangmanGame.resetObj();
                 hangmanGame.currentWord = hangmanGame.words[Math.floor(Math.random() * hangmanGame.words.length)];
@@ -107,9 +105,7 @@ var hangmanGame = {
 // which formally creates the canvas, adds it to the body, and begins the loop to update the canvas.
 function hangmanStart() {
     gameBackground = new Component(800, 500, `./assets/images/${theme}/background.png`, 0, 0);
-    offscreenBackground = new OffscreenComponent(800, 500, `./assets/images/light/background.png`, -800, 0);
     backgroundGlow = new Component(800, 500, `./assets/images/${theme}/glow.png`, 0, 0);
-    offscreenGlow = new OffscreenComponent(800, 500, `./assets/images/light/background.png`, -800, 0);
     character = new AnimatedItem(400, 400, `./assets/images/character/${theme}.png`, 0, 0);
     loadLetters();
     hangmanGame.start();
@@ -121,14 +117,12 @@ function updateGameArea() {
     hangmanGame.updateFrameCount();
     hangmanGame.clear();
     gameBackground.update();
-    offscreenBackground.update();
 
     if (hangmanGame.status === "menu") {
         updateLetters();
 
         updateDetails();
         glow.update();
-        offscreenGlow.update();
     } else if (hangmanGame.status === "game") {
         updateAnimatedCharacter();
         updateScreen();
@@ -136,7 +130,6 @@ function updateGameArea() {
 
         updateDetails();
         glow.update();
-        offscreenGlow.update();
     } else if (hangmanGame.status === "win") {
         updateAnimatedCharacter();
         updateScreen();
@@ -144,10 +137,8 @@ function updateGameArea() {
 
         updateDetails();
         glow.update();
-        offscreenGlow.update();
     } else if (hangmanGame.status === "lose") {
         glow.update();
-        offscreenGlow.update();
         fadeToBlack();
 
         if (blackOpac === 1 && teeth.bottom.length === 0 && teeth.top.length === 0) {
@@ -172,23 +163,6 @@ function Component(width, height, src, x, y) {
     this.y = y;
     this.update = function () {
         ctx = hangmanGame.canvas.getContext("2d");
-        ctx.drawImage(this.image,
-            this.x,
-            this.y,
-            this.width, this.height);
-    }
-}
-
-// Constructor function to create offscreen Components.
-function OffscreenComponent(width, height, src, x, y) {
-    this.image = new Image();
-    this.image.src = src;
-    this.width = width;
-    this.height = height;
-    this.x = x;
-    this.y = y;
-    this.update = function () {
-        ctx = hangmanGame.offscreenCanvas.getContext("2d");
         ctx.drawImage(this.image,
             this.x,
             this.y,
@@ -451,27 +425,21 @@ function checkState() {
     } else if (hangmanGame.guesses > 4 && hangmanGame.guesses <= 6) {
         theme = "light";
         fontColor = "#000000";
-        gameBackground.image.src = `./assets/images/${theme}/background.png`;
-        offscreenBackground.image.src = "./assets/images/dark/background.png";
-        backgroundGlow.image.src = `./assets/images/${theme}/glow.png`;
-        offscreenGlow.image.src = "./assets/images/dark/glow.png";
-        character.image.src = `./assets/images/character/${theme}.png`;
+        gameBackground = new Component(800, 500, `./assets/images/${theme}/background.png`, 0, 0);
+        backgroundGlow = new Component(800, 500, `./assets/images/${theme}/glow.png`, 0, 0);
+        character = new AnimatedItem(400, 400, `./assets/images/character/${theme}.png`, 0, 0);
     } else if (hangmanGame.guesses > 2 && hangmanGame.guesses <= 4) {
         theme = "dark";
         fontColor = "#490e06";
-        gameBackground.image.src = `./assets/images/${theme}/background.png`;
-        offscreenBackground.image.src = "./assets/images/darker/background.png";
-        backgroundGlow.image.src = `./assets/images/${theme}/glow.png`;
-        offscreenGlow.image.src= "./assets/images/darker/glow.png";
-        character.image.src = `./assets/images/character/${theme}.png`;
+        gameBackground = new Component(800, 500, `./assets/images/${theme}/background.png`, 0, 0);
+        backgroundGlow = new Component(800, 500, `./assets/images/${theme}/glow.png`, 0, 0);
+        character = new AnimatedItem(400, 400, `./assets/images/character/${theme}.png`, 0, 0);
     } else if (hangmanGame.guesses > 0 && hangmanGame.guesses <= 2) {
         theme = "darker";
         fontColor = "#871000";
-        gameBackground.image.src = `./assets/images/${theme}/background.png`;
-        offscreenBackground.image.src = "./assets/images/lighter/background.png";
-        backgroundGlow.image.src = `./assets/images/${theme}/glow.png`;
-        offscreenGlow.image.src = "./assets/images/lighter/glow.png";
-        character.image.src = `./assets/images/character/${theme}.png`;
+        gameBackground = new Component(800, 500, `./assets/images/${theme}/background.png`, 0, 0);
+        backgroundGlow = new Component(800, 500, `./assets/images/${theme}/glow.png`, 0, 0);
+        character = new AnimatedItem(400, 400, `./assets/images/character/${theme}.png`, 0, 0);
     }
 }
 
